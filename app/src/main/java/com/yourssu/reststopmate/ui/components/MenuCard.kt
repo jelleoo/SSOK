@@ -75,7 +75,7 @@ internal fun MenuCard(
     }
 }
 
-// Figma 표기는 "9900원". 팀과 표기를 정하면 이 함수만 고친다.
+// Figma 표기는 "9900원" 이지만 가독성을 위해 천단위 쉼표 추가함
 internal fun formatPrice(priceWon: Int): String {
     return "%,d원".format(priceWon)
 }
