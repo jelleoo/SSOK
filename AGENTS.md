@@ -34,8 +34,9 @@
 | --- | --- | --- |
 | 로그인 | ui/login/LoginScreen.kt | 로그인 UI, 게스트 버튼, 소셜 로그인 준비 중 표시 |
 | 게스트 상태 | ui/SessionViewModel.kt, data/SessionRepository.kt | 초기 로딩, 저장과 복원, 중복 클릭과 오류 처리 |
-| Home | ui/home/HomeScreen.kt | Home 콘텐츠와 검색 바로가기 |
-| Search | ui/search/SearchScreen.kt | 검색 입력, 필터, 검색 결과와 빈 상태 |
+| Home | ui/home/HomeScreen.kt, ui/nearby/ | 서버 휴게소 목록과 좁은 화면 Home |
+| Home 메뉴 | ui/menu/ | 휴게소별 메뉴와 정렬·뒤로가기 |
+| Search | ui/search/, data/search/ | 실제 검색·최근 기록·대표/전체 메뉴 창 |
 | My | ui/my/MyScreen.kt | 게스트 정보, 방문 휴게소, 월별 먹방 목록 |
 | 탭 연결 | ui/navigation/MainTabsScreen.kt | 선택한 탭, 검색어, 각 목록의 스크롤 상태, 뒤로가기 |
 | 공통 메뉴 | ui/navigation/TabMenu.kt | 좌측 메뉴와 좁은 화면의 하단 메뉴 |
@@ -76,7 +77,7 @@
 
 ## 목데이터와 실제 연동 구분
 
-현재 Home은 추천 기능을 연결하기 위한 임시 콘텐츠이다. Search는 /api/rest-stops API로 검색하며, 선택한 휴게소의 최근 검색 기록을 별도 DataStore에 저장한다. 소셜 로그인과 실제 방문/식사 기록 수집은 미구현이다.
+현재 Home은 PR #1의 /next API 기반 휴게소 화면이며, 위치는 FakeLocationProvider의 고정 시연 좌표이다. Home의 메뉴 목록·정렬과 Search의 대표/전체 메뉴 상세를 각각 유지한다. Search는 /api/rest-stops API로 검색하며, 선택한 휴게소의 최근 검색 기록을 별도 DataStore에 저장한다. 소셜 로그인과 실제 방문/식사 기록 수집은 미구현이다.
 My의 방문·식사 기록과 8회는 고정 목데이터이다. Search의 실제 최근 검색 기록과 구분하며, My의 기록이 실제 측정되었다고 보고하지 않는다.
 Pleos SDK의 사용 가능 상태는 프로젝트 권한과 에뮬레이터 버전에 따라 확인한다. FusedLocation, TextToSpeech, Gleo 등의 연동을 확인 없이 동작한다고 가정하지 않는다.
 현재 로그인/탭/목데이터 화면 작업에 Pleos SDK나 새 백엔드를 불필요하게 추가하지 않는다.
@@ -86,7 +87,7 @@ Pleos SDK의 사용 가능 상태는 프로젝트 권한과 에뮬레이터 버�
 
 - 기존 컴포넌트와 색상을 재사용한다. UI, 상태 처리, 저장소, 목데이터의 책임을 유지한다.
 - 화면 이동은 전달받은 콜백으로 처리하고, 각 화면에서 새 탭 상태나 게스트 저장소를 만들지 않는다.
-- 영구 저장은 SessionRepository에, 세션 상태 처리는 SessionViewModel에 둔다.
+- 게스트 저장은 SessionRepository, 검색 기록 저장은 data/search/RestStopRepository, 세션 상태 처리는 SessionViewModel에 둔다. Home 서버 연동은 data/RestStopRepository와 data/remote에 있다.
 - 한 목록에 독립된 LazyListState를 사용하고 안정적인 item key를 유지한다.
 - 기존 로고/음식 이미지를 사용한다. 임시 Figma URL을 앱 실행 시 네트워크 이미지 주소로 사용하지 않는다.
 - 함수/파일을 분리한 뒤에는 package, import, 접근 제한자와 호출부를 확인한다.

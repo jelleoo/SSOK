@@ -1,4 +1,4 @@
-# 휴게소 메이트 — 게스트 로그인 MVP
+# 휴게소 메이트 — Home·Search 통합 MVP
 
 Android Studio에서 이 폴더를 Open한 뒤 Gradle Sync하고 app을 실행하세요.
 JDK 17 또는 21, Android SDK 35가 필요합니다. minSdk는 28입니다. 현재 빌드는 JDK 21 기준입니다. Android Studio의 Gradle JDK가 25라면 Settings > Build, Execution, Deployment > Build Tools > Gradle에서 JDK 21로 변경하세요.
@@ -12,7 +12,7 @@ JDK 17 또는 21, Android SDK 35가 필요합니다. minSdk는 28입니다. 현�
 - 저장/조회 오류는 사용자에게 표시하고 재시도 제공.
 - 카카오/네이버 버튼은 준비 중인 비활성 버튼. 실제 인증 미구현.
 - 로그인 후 Home 진입. 공통 Home/Search/My 탭 제공.
-- Home은 팀 추천 화면을 붙일 연결용 화면과 검색 바로가기를 제공.
+- Home: /next API의 가까운 휴게소 목록, 좁은 화면용 거리 안내, 휴게소별 전체 메뉴·정렬 화면을 제공합니다. 위치는 고정 시연 좌표이며 실제 Pleos 위치 연동은 아직 없습니다.
 - Search: HTTPS API에서 휴게소 목록을 받아 이름으로 검색. 결과에서 선택한 휴게소만 최근 기록에 최대 10개 저장하며, 중복 없이 최신순으로 복원합니다.
 - My: 자주 방문한 휴게소와 이번 달 메뉴 목데이터, 먹방 횟수 8회.
 - 휴게소/메뉴 목록은 스크롤바 없는 LazyRow로 터치 드래그 및 플링 지원.
@@ -104,3 +104,17 @@ adb shell am instrument --user current -w -e phase restore com.yourssu.reststopm
 대표 메뉴 아래의 전체 메뉴 보기 버튼으로 해당 휴게소 전체 메뉴 API를 조회합니다. 사진·이름·가격을 화면 너비에 맞춘 카드 목록으로 표시하며 터치로 세로 스크롤합니다. 대표 메뉴로 돌아가거나 닫아도 기존 검색어와 목록 위치를 유지합니다. 연결 실패·메뉴 없음·사진/가격 누락은 별도로 안내합니다.
 
 검사 명령: adb shell am instrument --user current -w -e phase all-menus com.yourssu.reststopmate.test/com.yourssu.reststopmate.SearchFlowVerification
+
+## Home·Search 통합 확인
+
+PR #1의 Home·메뉴 정렬 화면과 Search의 API 검색·최근 기록·대표/전체 메뉴 창을 함께 제공합니다. Home 목록, Search 결과/최근 목록, My의 두 목록은 독립된 스크롤 상태를 사용합니다. Home 메뉴에서 뒤로가면 Home 목록, Search/My에서 시스템 뒤로가면 Home으로 돌아갑니다. 게스트 상태와 최근 검색 기록의 저장 형식은 변경하지 않았습니다.
+
+다음 검사는 앱 데이터를 지우지 않으며 검색 기록에 안성휴게소를 추가합니다. 테스트 APK를 설치한 뒤 `verification=PASS`를 확인하세요.
+
+```powershell
+adb shell am instrument --user current -w -e phase integration com.yourssu.reststopmate.test/com.yourssu.reststopmate.SearchFlowVerification
+adb shell am force-stop --user current com.yourssu.reststopmate
+adb shell am instrument --user current -w -e phase integration-restore com.yourssu.reststopmate.test/com.yourssu.reststopmate.SearchFlowVerification
+```
+
+최종 통합 검증 결과와 Pleos 확인 제약은 [통합 검증 기록](verification/integration-2026-11-15.md)을 참고하세요. Home 메뉴 정렬을 변경하면 목록 맨 위로 이동합니다.

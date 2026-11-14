@@ -2,6 +2,7 @@ package com.yourssu.reststopmate
 
 import android.app.Activity
 import android.app.Instrumentation
+import android.app.UiAutomation
 import android.content.Intent
 import android.os.Bundle
 import android.os.SystemClock
@@ -10,12 +11,15 @@ import android.view.accessibility.AccessibilityNodeInfo
 /** Real-device smoke check. Never clears guest state or existing search history. */
 class SearchFlowVerification : Instrumentation() {
     private var phase = "select"
+    private var homeScrollAnchor: String? = null
 
     override fun onCreate(arguments: Bundle?) {
         super.onCreate(arguments)
         phase = arguments?.getString("phase") ?: "select"
         start()
     }
+
+    private val automation get() = getUiAutomation(UiAutomation.FLAG_DONT_SUPPRESS_ACCESSIBILITY_SERVICES)
 
     override fun onStart() {
         val result = Bundle()
@@ -27,17 +31,28 @@ class SearchFlowVerification : Instrumentation() {
         }
         sendStatus(1, status)
         try {
-            val info = uiAutomation.serviceInfo
+            val info = automation.serviceInfo
             info.flags = info.flags or android.accessibilityservice.AccessibilityServiceInfo.FLAG_RETRIEVE_INTERACTIVE_WINDOWS
-            uiAutomation.serviceInfo = info
-            val activity = startActivitySync(Intent(targetContext, MainActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
+            automation.serviceInfo = info
+            val activity = startActivitySync(Intent(targetContext, MainActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK))
             android.os.ParcelFileDescriptor.AutoCloseInputStream(
-                uiAutomation.executeShellCommand("am task focus ${activity.taskId}")
+                automation.executeShellCommand("am task focus ${activity.taskId}")
             ).use { it.readBytes() }
-            waitFor("휴게소 검색하기")
+            waitForHome()
+            if (phase == "integration") verifyHomeMenu()
             tap("Search")
             waitFor("최근 검색 항목")
-            if (phase == "all-menus") {
+            if (phase == "integration-restore") {
+                waitFor("안성휴게소")
+                tap("안성휴게소")
+                waitFor("안성국밥")
+                waitFor("10,000원")
+                tap("닫기")
+                waitFor("최근 검색 항목")
+                tap("Home")
+                waitForHome()
+                result.putString("verification", "PASS: guest Home and recent history restored after process restart; saved item opens real featured menu")
+            } else if (phase == "all-menus" || phase == "integration") {
                 query("안성")
                 waitFor("안성휴게소")
                 tap("안성휴게소")
@@ -60,7 +75,25 @@ class SearchFlowVerification : Instrumentation() {
                 waitFor("10,000원")
                 tap("닫기")
                 waitFor("검색 결과")
-                check(nodes().any { it.text?.toString() == "안성" }) { "Search query was not preserved" }
+                check(!hasText("망향휴게소")) { "Search filter was not preserved" }
+                if (phase == "integration") {
+                    tap("My")
+                    waitFor("자주 방문한 휴게소")
+                    waitFor("이번 달 휴게소 먹방 횟수")
+                    waitFor("8회")
+                    tap("Search")
+                    waitFor("검색 결과")
+                    waitFor("안성휴게소")
+                    check(!hasText("망향휴게소")) { "Tab switch lost Search query" }
+                    tap("지우기")
+                    waitFor("최근 검색 항목")
+                    waitFor("안성휴게소")
+                    tap("Home")
+                    waitForHome()
+                    homeScrollAnchor?.let { anchor ->
+                        check(visibleHomeStops().firstOrNull() == anchor) { "Home scroll position was lost" }
+                    }
+                }
                 result.putString("verification", "PASS: featured to full menu, 28 real items with prices, scroll to last item, back to featured, preserved search")
             } else if (phase == "detail") {
                 query("안성")
@@ -76,7 +109,7 @@ class SearchFlowVerification : Instrumentation() {
                 tap("안성휴게소")
                 waitFor("안성국밥")
                 waitFor("10,000원")
-                uiAutomation.takeScreenshot()?.let { image ->
+                automation.takeScreenshot()?.let { image ->
                     val file = java.io.File(targetContext.getExternalFilesDir(null), "featured-menu-verified.png")
                     java.io.FileOutputStream(file).use { image.compress(android.graphics.Bitmap.CompressFormat.PNG, 100, it) }
                     image.recycle()
@@ -143,7 +176,45 @@ class SearchFlowVerification : Instrumentation() {
         }
     }
 
+    private fun waitForHome() {
+        val end = SystemClock.uptimeMillis() + 45_000
+        while (SystemClock.uptimeMillis() < end) {
+            val visible = nodes().mapNotNull { it.text?.toString() }
+            if ("가까운 휴게소" in visible || "휴게소까지" in visible) return
+            SystemClock.sleep(250)
+        }
+        error("Home did not load: ${nodes().mapNotNull { it.text }}")
+    }
+
+    private fun visibleHomeStops() = nodes().filter { it.isVisibleToUser }
+        .mapNotNull { it.text?.toString() }
+        .filter { it.endsWith("휴게소") && it != "가까운 휴게소" }
+
+    private fun verifyHomeMenu() {
+        waitFor("안성휴게소")
+        tap("안성휴게소")
+        waitFor("안성휴게소 메뉴")
+        tap("높은 가격순")
+        tap("낮은 가격순")
+        waitFor("4,000원")
+        val prices = nodes().mapNotNull { it.text?.toString() }
+            .filter { it.matches(Regex("[0-9,]+원")) }
+            .map { it.replace(",", "").removeSuffix("원").toInt() }
+        check(prices.size >= 2 && prices.zipWithNext().all { (a, b) -> a <= b })
+        var back = nodes().first { it.contentDescription?.toString() == "뒤로가기" }
+        while (!back.isClickable) back = back.parent ?: error("Home menu back is not clickable")
+        check(back.performAction(AccessibilityNodeInfo.ACTION_CLICK))
+        waitForHome()
+        nodes().firstOrNull { it.isScrollable }?.let { row ->
+            check(row.performAction(AccessibilityNodeInfo.ACTION_SCROLL_FORWARD))
+            SystemClock.sleep(600)
+            homeScrollAnchor = visibleHomeStops().firstOrNull()
+        }
+    }
+
     private fun nodes(): List<AccessibilityNodeInfo> {
+        // Compose can replace a whole screen without invalidating UiAutomation's node cache.
+        if (android.os.Build.VERSION.SDK_INT >= 33) automation.clearCache()
         val result = mutableListOf<AccessibilityNodeInfo>()
         fun walk(node: AccessibilityNodeInfo?) {
             if (node == null || node.packageName?.toString() != targetContext.packageName) return
@@ -151,14 +222,14 @@ class SearchFlowVerification : Instrumentation() {
             for (i in 0 until node.childCount) walk(node.getChild(i))
         }
         if (android.os.Build.VERSION.SDK_INT >= 30) {
-            val windows = uiAutomation.windowsOnAllDisplays
+            val windows = automation.windowsOnAllDisplays
             for (index in 0 until windows.size()) {
                 windows.valueAt(index).forEach { walk(it.root) }
             }
         } else {
-            uiAutomation.windows.forEach { walk(it.root) }
+            automation.windows.forEach { walk(it.root) }
         }
-        return result.filter { it.packageName?.toString() == targetContext.packageName }
+        return result.filter { it.isVisibleToUser && it.packageName?.toString() == targetContext.packageName }
     }
 
     private fun hasText(text: String) = nodes().any { it.text?.toString() == text }
@@ -173,6 +244,7 @@ class SearchFlowVerification : Instrumentation() {
     }
 
     private fun tap(text: String) {
+        waitFor(text)
         var node = nodes().firstOrNull { it.text?.toString() == text } ?: error("Cannot tap $text")
         while (!node.isClickable) node = node.parent ?: error("Not clickable: $text")
         check(node.performAction(AccessibilityNodeInfo.ACTION_CLICK)) { "Tap failed: $text" }
@@ -180,7 +252,7 @@ class SearchFlowVerification : Instrumentation() {
     }
 
     private fun query(value: String) {
-        val field = nodes().firstOrNull { it.isEditable } ?: error("Search input missing")
+        val field = nodes().firstOrNull { it.isEditable || it.className?.toString() == "android.widget.EditText" } ?: error("Search input missing")
         check(field.performAction(AccessibilityNodeInfo.ACTION_SET_TEXT, Bundle().apply {
             putCharSequence(AccessibilityNodeInfo.ACTION_ARGUMENT_SET_TEXT_CHARSEQUENCE, value)
         })) { "Cannot enter Korean query" }
