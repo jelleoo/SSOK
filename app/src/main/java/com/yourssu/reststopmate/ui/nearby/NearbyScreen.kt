@@ -48,7 +48,7 @@ import kotlinx.coroutines.launch
 // 바깥: ViewModel을 만들고 상태를 구독한다. 나중에 HomeScreen(넓은 화면)에서 이 함수를 부른다.
 @Composable
 internal fun NearbyRoute(
-    onRestStopClick: (restStopId: String) -> Unit,
+    onRestStopClick: (restStop: RestStop) -> Unit,
     listState: LazyListState = rememberLazyListState(),
 ) {
     val viewModel: NearbyViewModel = viewModel(factory = NearbyViewModel.factory())
@@ -60,7 +60,7 @@ internal fun NearbyRoute(
 @Composable
 internal fun NearbyContent(
     state: UiState<List<RestStop>>,
-    onRestStopClick: (restStopId: String) -> Unit,
+    onRestStopClick: (restStop: RestStop) -> Unit,
     onRetry: () -> Unit,
     listState: LazyListState = rememberLazyListState(),
 ) {
@@ -90,7 +90,7 @@ internal fun NearbyContent(
 @Composable
 internal fun NearbyScreen(
     restStops: List<RestStop>,
-    onRestStopClick: (restStopId: String) -> Unit,
+    onRestStopClick: (restStop: RestStop) -> Unit,
     listState: LazyListState,
     modifier: Modifier = Modifier,
 ) {
@@ -116,7 +116,7 @@ internal fun NearbyScreen(
             ) {
                 items(restStops, key = { it.id }) { restStop -> RestAreaCard(
                     restStop = restStop,
-                    onClick = {onRestStopClick(restStop.id)},
+                    onClick = { onRestStopClick(restStop) },
                     onAdd = { },
                     modifier = Modifier.width(cardWidth),
                 ) }

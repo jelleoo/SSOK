@@ -14,6 +14,7 @@ import com.yourssu.reststopmate.ui.components.*
 import com.yourssu.reststopmate.data.mock.*
 
 import com.yourssu.reststopmate.ui.home.HomeScreen
+import com.yourssu.reststopmate.ui.menu.MenuListRoute
 import com.yourssu.reststopmate.ui.search.SearchScreen
 import com.yourssu.reststopmate.ui.my.MyScreen
 
@@ -26,7 +27,14 @@ fun MainTabsScreen() {
     val frequentScroll = rememberLazyListState()
     val mealScroll = rememberLazyListState()
     val myScroll = rememberScrollState()
+    val nearbyScroll = rememberLazyListState()
+
+    var menuRestStopId by rememberSaveable { mutableStateOf<String?>(null) }
+    var menuRestStopName by rememberSaveable { mutableStateOf("") }
+
     BackHandler(enabled = selectedTab != "Home") { selectedTab = "Home" }
+
+    BackHandler(enabled = selectedTab == "Home" && menuRestStopId != null) { menuRestStopId = null }
 
     BoxWithConstraints(Modifier.fillMaxSize().safeDrawingPadding()) {
         val compact = maxWidth < 700.dp
@@ -36,7 +44,22 @@ fun MainTabsScreen() {
                 when (selectedTab) {
                     "Search" -> SearchScreen(query, { query = it }, searchScroll)
                     "My" -> MyScreen(frequentScroll, mealScroll, myScroll)
-                    else -> HomeScreen { selectedTab = "Search" }
+                    else -> {
+                        val id = menuRestStopId
+                        if (id != null) {
+                            MenuListRoute(restStopId = id, restStopName = menuRestStopName, onBack = { menuRestStopId = null })
+                        } else {
+                            HomeScreen(
+                                compact = compact,
+                                nearbyListState = nearbyScroll,
+                                onRestStopClick = { restStop ->
+                                    menuRestStopId = restStop.id
+                                    menuRestStopName = restStop.name
+                                },
+                                onSearch = { selectedTab = "Search" },
+                            )
+                        }
+                    }
                 }
             }
         }

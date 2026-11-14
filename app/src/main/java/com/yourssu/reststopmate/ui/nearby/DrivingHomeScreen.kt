@@ -42,7 +42,7 @@ private const val GAUGE_FULL_KM = 10.0
 // 바깥: ②와 같은 NearbyViewModel을 쓴다 (둘 다 /next 결과를 보여 주므로). 나중에 HomeScreen(좁은 화면)에서 부른다.
 @Composable
 internal fun DrivingHomeRoute(
-    onRestStopClick: (restStopId: String) -> Unit,
+    onRestStopClick: (restStop: RestStop) -> Unit,
 ) {
     val viewModel: NearbyViewModel = viewModel(factory = NearbyViewModel.factory())
     val state by viewModel.state.collectAsStateWithLifecycle()
@@ -54,7 +54,7 @@ internal fun DrivingHomeRoute(
 internal fun DrivingHomeContent(
     state: UiState<List<RestStop>>,
     location: LatLng?,
-    onRestStopClick: (restStopId: String) -> Unit,
+    onRestStopClick: (restStop: RestStop) -> Unit,
     onRetry: () -> Unit,
 ) {
     when (state) {
@@ -85,7 +85,7 @@ internal fun DrivingHomeContent(
 internal fun DrivingHomeScreen(
     restStop: RestStop,
     location: LatLng,
-    onRestStopClick: (restStopId: String) -> Unit,
+    onRestStopClick: (restStop: RestStop) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val km = distanceKm(from = location,
@@ -115,7 +115,7 @@ internal fun DrivingHomeScreen(
 
         RestAreaCard(
             restStop = restStop,
-            onClick = { onRestStopClick(restStop.id) },
+            onClick = { onRestStopClick(restStop) },
             onAdd = { },
             modifier = Modifier.weight(1f),
         )
