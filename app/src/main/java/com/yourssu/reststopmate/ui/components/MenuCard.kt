@@ -1,7 +1,6 @@
 package com.yourssu.reststopmate.ui.components
 
 import androidx.annotation.DrawableRes
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -23,6 +22,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import coil.compose.AsyncImage
 import com.yourssu.reststopmate.R
 import com.yourssu.reststopmate.ui.theme.Muted
 import com.yourssu.reststopmate.ui.theme.Panel
@@ -35,6 +35,7 @@ internal fun MenuCard(
     priceWon: Int,
     @DrawableRes imageRes: Int,
     modifier: Modifier = Modifier,
+    imageUrl: String? = null,
 ) {
     Surface(
         modifier = modifier.fillMaxWidth(),
@@ -47,11 +48,14 @@ internal fun MenuCard(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(20.dp),
         ) {
-            Image(
-                painter = painterResource(imageRes),
+            AsyncImage(
+                model = imageUrl,
                 contentDescription = name,
                 modifier = Modifier.size(140.dp, 100.dp).clip(RoundedCornerShape(20.dp)),
                 contentScale = ContentScale.Crop,
+                placeholder = painterResource(imageRes),
+                error = painterResource(imageRes),
+                fallback = painterResource(imageRes),
             )
 
             Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {

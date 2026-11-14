@@ -104,6 +104,7 @@ internal fun MenuListScreen(
                         description = menu.description,
                         priceWon = menu.priceWon,
                         imageRes = menu.imageRes,
+                        imageUrl = menu.imageUrl,
                         )}
                 }
             }
