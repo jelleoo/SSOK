@@ -19,3 +19,7 @@ internal val ChipFacility = Color(0xFF2F5BD3)
 internal val OnChipFacility = Color.White
 internal val ChipBrand = Color(0xFFE8EEFC)
 internal val OnChipBrand = Ink
+
+// 주행 중 홈(③) 거리 게이지. 연한 배경 막대 위에 진한 진행 막대. Figma 값과 다르면 여기만 고친다.
+internal val GaugeTrack = Color(0xFFDCE6FB)
+internal val GaugeFill = Color(0xFF2F5BD3)
