@@ -10,6 +10,7 @@ android {
         applicationId = "com.yourssu.reststopmate"
         minSdk = 28
         targetSdk = 34
+        testInstrumentationRunner = "com.yourssu.reststopmate.SearchFlowVerification"
         versionCode = 1
         versionName = "0.1.0"
     }

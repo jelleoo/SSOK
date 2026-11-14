@@ -15,14 +15,20 @@ import com.yourssu.reststopmate.data.mock.*
 
 import com.yourssu.reststopmate.ui.home.HomeScreen
 import com.yourssu.reststopmate.ui.search.SearchScreen
+import com.yourssu.reststopmate.ui.search.SearchViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.yourssu.reststopmate.ui.my.MyScreen
 
 @Composable
 fun MainTabsScreen() {
     var selectedTab by rememberSaveable { mutableStateOf("Home") }
-    var query by rememberSaveable { mutableStateOf("") }
+    val search: SearchViewModel = viewModel()
+    val searchState by search.state.collectAsStateWithLifecycle()
     // Keep independent drag positions while switching tabs.
     val searchScroll = rememberLazyListState()
+    val searchHistoryScroll = rememberLazyListState()
+    LaunchedEffect(searchState.query) { searchScroll.scrollToItem(0) }
     val frequentScroll = rememberLazyListState()
     val mealScroll = rememberLazyListState()
     val myScroll = rememberScrollState()
@@ -34,7 +40,7 @@ fun MainTabsScreen() {
         fun Content(modifier: Modifier) {
             Box(modifier) {
                 when (selectedTab) {
-                    "Search" -> SearchScreen(query, { query = it }, searchScroll)
+                    "Search" -> SearchScreen(searchState, search::setQuery, search::select, search::load, search::observeHistory, search::dismissMessage, search::closeMenu, search::retryMenu, search::showAllMenus, search::backToFeatured, searchScroll, searchHistoryScroll)
                     "My" -> MyScreen(frequentScroll, mealScroll, myScroll)
                     else -> HomeScreen { selectedTab = "Search" }
                 }
