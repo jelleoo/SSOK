@@ -8,3 +8,5 @@ local.properties
 *.log
 verification/*.png
 verification/*.xml
+
+apk/*.idsig
