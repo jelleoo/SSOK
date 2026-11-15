@@ -4,7 +4,6 @@
 
 SSOK!은 고속도로 휴게소의 대표 먹거리와 가격을 한눈에 살펴보고, 휴게소 검색부터 전체 메뉴 탐색까지 이어주는 차량용 앱입니다.
 
-> 현재 MVP의 앱 설치 이름은 **휴게소 메이트**입니다. 설치 후 앱 목록에서 해당 이름을 선택해 실행해 주세요.
 
 ## 1. 주요 기능과 구현 범위
 
@@ -102,8 +101,6 @@ adb install -r app/build/outputs/apk/debug/app-debug.apk
 - 한글 휴게소 검색 → 대표 메뉴 → 전체 메뉴 및 세로 터치 스크롤
 - 앱 강제 종료·재실행 후 게스트 상태 및 최근 검색 기록 복원
 
-상세 결과와 재현 정보는 [통합 검증 기록](verification/integration-2026-11-15.md)을 참고해 주세요. 이전 로그인·탭·목데이터 단계의 Pleos 검증 기록은 [초기 Pleos 검증 기록](verification/RESULTS.md)에 있습니다.
-
 ## 4. Pleos Connect 에뮬레이터 버전 및 화면 규격
 
 개발에 사용한 Pleos AVD 설정은 다음과 같습니다.
@@ -117,28 +114,9 @@ adb install -r app/build/outputs/apk/debug/app-debug.apk
 
 위 해상도는 에뮬레이터 전체 디스플레이 기준입니다. 시스템 UI와 앱 창 배치에 따라 앱이 실제 사용하는 영역은 달라지며, 앱은 사용 가능한 너비에 맞춰 탭과 목록 배치를 변경합니다.
 
-**Pleos 확인 범위:** 초기 버전의 게스트 로그인·탭 전환·터치 드래그·재실행 상태 유지를 확인했습니다. 최신 통합 버전에서는 앱 실행과 Home API 요청 성공을 확인했으나, Pleos 시스템의 검은 화면 및 차량 관련 서비스 반복 종료가 발생하여 전체 시나리오 검증을 완료하지 못했습니다. 위 일반 Android 에뮬레이터의 전체 통과 결과와 구분합니다.
-
 ## 5. APK 파일 위치
 
-현재 배포 파일은 **MVP 디버그 APK**입니다.
-
-- 직접 빌드한 파일: [`app/build/outputs/apk/debug/app-debug.apk`](app/build/outputs/apk/debug/app-debug.apk)
-- 신청서 별도 첨부 파일명: `SSOK_0.1.0_MVP_2026-11-15.apk`
+- 파일: [`app/build/outputs/apk/debug/app-debug.apk`](app/build/outputs/apk/debug/app-debug.apk)
+- 기획서에도 링크 첨부하였습니다.
 - 용량: 약 **30.8 MB**
 
-APK 등 빌드 산출물은 Git으로 관리하지 않으므로, 클론 직후에는 위 경로에 파일이 없습니다. `assembleDebug` 빌드 후 생성됩니다. 현재 등록된 GitHub Release 다운로드 링크는 없습니다.
-
-## 6. 화면별 작업 파일
-
-아래 경로는 `app/src/main/java/com/yourssu/reststopmate/` 기준입니다.
-
-- 로그인: `ui/login/LoginScreen.kt`
-- Home: `ui/home/`, `ui/nearby/`
-- Home 메뉴 및 정렬: `ui/menu/`
-- Search·대표 메뉴·전체 메뉴: `ui/search/`, `data/search/`
-- My: `ui/my/MyScreen.kt`
-- 탭 연결: `ui/navigation/MainTabsScreen.kt`, `ui/navigation/TabMenu.kt`
-- 게스트 상태 저장: `data/SessionRepository.kt`, `ui/SessionViewModel.kt`
-
-협업 규칙과 AI 에이전트 작업 지침은 [AGENTS.md](AGENTS.md)를 참고해 주세요.
