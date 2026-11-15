@@ -29,10 +29,10 @@ SSOK!은 고속도로 휴게소의 대표 먹거리와 가격을 한눈에 살�
 1. 저장소를 클론합니다.
 
    ```sh
-   git clone https://github.com/jelleoo/reststop-mate-android.git
+   git clone https://github.com/jelleoo/SSOK.git
    ```
 
-2. Android Studio에서 `reststop-mate-android` 폴더를 **Open**합니다.
+2. Android Studio에서 `SSOK` 폴더를 **Open**합니다.
 3. SDK Manager에서 **Android SDK Platform 35**를 설치합니다.
 4. Gradle JDK를 **JDK 21**로 지정한 뒤 Gradle Sync를 실행합니다.
 5. Pleos Connect 에뮬레이터를 실행하고, 실행 대상으로 선택한 뒤 `app`을 Run합니다.
@@ -114,9 +114,29 @@ adb install -r app/build/outputs/apk/debug/app-debug.apk
 
 위 해상도는 에뮬레이터 전체 디스플레이 기준입니다. 시스템 UI와 앱 창 배치에 따라 앱이 실제 사용하는 영역은 달라지며, 앱은 사용 가능한 너비에 맞춰 탭과 목록 배치를 변경합니다.
 
-## 5. APK 파일 위치
+## 5. 제출용 release APK
 
-- 파일: [`app/build/outputs/apk/debug/app-debug.apk`](app/build/outputs/apk/debug/app-debug.apk)
-- 기획서에도 링크 첨부하였습니다.
-- 용량: 약 **30.8 MB**
+- 팀명: **루키즈** / 앱 이름: **SSOK!**
+- APK 파일: [`apk/루키즈_SSOK_release.apk`](apk/루키즈_SSOK_release.apk)
+- 제출 페이지에 입력할 APK 경로: `apk/루키즈_SSOK_release.apk`
+- 서명된 **release 빌드**이며 디버그 APK가 아닙니다.
+- 파일 크기: **23,367,605 bytes** (약 23.4 MB)
+- SHA-256: `3f5f8069a35d02e7cbcad681a73d0deaf8a2f5e142ceb3c1818b738c50c08df3`
+- 설치 후 앱 목록에서는 현재 설치 이름인 **휴게소 메이트**로 표시됩니다.
 
+위 APK는 저장소에 포함되어 있으므로 클론 후 바로 설치할 수 있습니다.
+
+```sh
+adb install "apk/루키즈_SSOK_release.apk"
+```
+
+기존 디버그 APK와 서명이 다르므로 별도의 테스트 기기나 에뮬레이터에 설치하는 것을 권장합니다. 기존 앱 제거 후 설치하면 해당 앱의 기기 내 게스트 상태와 검색 기록이 삭제됩니다.
+
+소스에서 release 빌드 산출물을 생성하려면 아래 명령을 실행합니다.
+
+```sh
+# Windows에서는 ./gradlew 대신 .\gradlew.bat 사용
+./gradlew :app:assembleRelease
+```
+
+생성 경로는 `app/build/outputs/apk/release/app-release-unsigned.apk`입니다. 이를 `zipalign` 처리한 뒤 별도로 보관한 release 키로 `apksigner` 서명해야 설치 가능한 APK가 됩니다. 서명 키와 비밀번호는 저장소에 포함하지 않습니다. 저장소의 `apk/루키즈_SSOK_release.apk`는 정렬·서명 완료 파일입니다.
