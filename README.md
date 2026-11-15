@@ -1,120 +1,144 @@
-# 휴게소 메이트 — Home·Search 통합 MVP
+# SSOK! (쏙)
 
-Android Studio에서 이 폴더를 Open한 뒤 Gradle Sync하고 app을 실행하세요.
-JDK 17 또는 21, Android SDK 35가 필요합니다. minSdk는 28입니다. 현재 빌드는 JDK 21 기준입니다. Android Studio의 Gradle JDK가 25라면 Settings > Build, Execution, Deployment > Build Tools > Gradle에서 JDK 21로 변경하세요.
+**고속도로 위, 맛있는 쉼표.**
 
-## 동작
+SSOK!은 고속도로 휴게소의 대표 먹거리와 가격을 한눈에 살펴보고, 휴게소 검색부터 전체 메뉴 탐색까지 이어주는 차량용 앱입니다.
 
-- 최초 실행: 저장 상태를 읽는 동안 로딩 → 로그인.
-- 게스트로 시작하기: DataStore 저장 → Home으로 전환.
-- 앱 강제 종료/재실행 및 화면 회전 후에도 게스트 유지.
-- Home은 로그인 화면 위에 쌓이지 않으므로 뒤로가기로 로그인에 돌아가지 않음.
-- 저장/조회 오류는 사용자에게 표시하고 재시도 제공.
-- 카카오/네이버 버튼은 준비 중인 비활성 버튼. 실제 인증 미구현.
-- 로그인 후 Home 진입. 공통 Home/Search/My 탭 제공.
-- Home: /next API의 가까운 휴게소 목록, 좁은 화면용 거리 안내, 휴게소별 전체 메뉴·정렬 화면을 제공합니다. 위치는 고정 시연 좌표이며 실제 Pleos 위치 연동은 아직 없습니다.
-- Search: HTTPS API에서 휴게소 목록을 받아 이름으로 검색. 결과에서 선택한 휴게소만 최근 기록에 최대 10개 저장하며, 중복 없이 최신순으로 복원합니다.
-- My: 자주 방문한 휴게소와 이번 달 메뉴 목데이터, 먹방 횟수 8회.
-- 휴게소/메뉴 목록은 스크롤바 없는 LazyRow로 터치 드래그 및 플링 지원.
-- My의 두 가로 목록은 독립적인 스크롤 위치를 유지하며 탭 전환 후에도 복원.
-- 게스트 상태는 인증 토큰이 아니며 서버 인증 용도로 사용하지 않음.
-- 앱 데이터 삭제/제거 시 상태 초기화. 자동 백업 비활성화.
+> 현재 MVP의 앱 설치 이름은 **휴게소 메이트**입니다. 설치 후 앱 목록에서 해당 이름을 선택해 실행해 주세요.
 
-## 구조
+## 1. 주요 기능과 구현 범위
 
-- `data/SessionRepository.kt`: Preferences DataStore 영구 저장.
-- `ui/SessionViewModel.kt`: 초기 읽기, 중복 클릭 차단, 저장 오류 처리.
-- `ui/login/LoginScreen.kt`: 로그인 화면과 게스트 시작 버튼.
-- `ui/home/HomeScreen.kt`: Home 화면과 검색 바로가기.
-- `ui/search/SearchScreen.kt`: 검색 입력과 검색 기록.
-- `ui/my/MyScreen.kt`: 게스트 정보, 방문 휴게소, 월별 메뉴 기록.
-- `ui/navigation/MainTabsScreen.kt`: 탭 상태와 화면 연결.
-- `ui/navigation/TabMenu.kt`: 공통 가로/세로 탭 메뉴.
-- `ui/components/`: 공통 휴게소 카드 목록과 제목.
-- `ui/theme/Colors.kt`: 공통 색상.
-- `data/mock/MockData.kt`: 방문 기록과 메뉴 목데이터.
-- `MainActivity.kt`: 세션 상태에 따라 로그인/Home을 선택하는 루트.
+- **게스트 로그인**: 별도 회원가입 없이 Home으로 이동하며, 앱 재실행 후에도 게스트 상태를 유지합니다.
+- **Home**: 서버에서 가까운 휴게소와 편의시설 정보를 불러옵니다. 휴게소 카드의 `+` 버튼으로 메뉴를 열고, 가격순·이름순으로 정렬할 수 있습니다.
+- **Search**: 휴게소 이름을 검색하고 결과를 선택하면 대표 메뉴의 사진·이름·가격을 확인할 수 있습니다. `전체 메뉴 보기`에서 다른 메뉴와 가격을 세로 터치 스크롤로 탐색합니다.
+- **최근 검색**: 검색 결과에서 선택한 휴게소를 최대 10개까지 저장하며, 앱 재실행 후에도 복원합니다.
+- **My**: 방문 휴게소와 메뉴 기록을 가로 터치 스크롤로 확인합니다. 현재 표시되는 방문·식사 기록과 월별 `8회`는 목데이터입니다.
+- **화면 대응**: 넓은 앱 영역은 좌측 탭, 좁은 앱 영역은 하단 탭으로 Home·Search·My를 전환합니다.
 
-Figma 토큰의 배경 #F7F8FA, 본문 #131417, 게스트 버튼 #44464E 및
-카카오·네이버 로고 원본 SVG를 사용했습니다. 첫 실행 화면은 앞서 합의한
-앱 소개·게스트 진입 흐름으로 구성하고, 초안의 탭 메뉴·Label은 제거했습니다.
-폰트는 플랫폼 기본 sans-serif를 사용합니다(Asta Sans 폰트 파일 미제공).
+### 현재 MVP의 데이터 및 연동 범위
 
-## 확인할 시나리오
+- Home 위치는 `FakeLocationProvider`의 고정 시연 좌표를 사용합니다. 실제 차량의 현재 위치를 수집하지 않습니다.
+- Home의 혼잡도 표시는 시연용 데이터이며, 실시간 휴게소 혼잡도 측정 결과가 아닙니다.
+- 휴게소·메뉴 조회는 실제 서버 API를 사용합니다. 현재 서버 제공 범위는 경부고속도로 부산 방향입니다.
+- Pleos 차량 위치·음성 안내·내비게이션 경유지 연결, 관심 메뉴 보관함, 소셜 로그인은 개발 예정입니다.
+- 게스트 상태와 최근 검색 기록은 기기에 저장됩니다. 앱 데이터 삭제 또는 앱 제거 시 초기화됩니다.
 
-1. 앱 데이터 초기화 후 실행하면 로그인 표시.
-2. 게스트 버튼을 연속 클릭해도 한 번만 시작.
-3. Home에서 뒤로가기를 누르면 로그인 없이 종료.
-4. 앱 강제 종료 후 다시 실행하면 로그인 없이 Home 표시.
-5. 가로/세로 전환 및 시스템 글꼴 확대 시 버튼과 오류 문구 확인.
+## 2. 실행 방법
 
-Pleos 위치·음성 SDK와 네트워크가 없어도 로그인 기능은 실행됩니다.
+### Android Studio에서 실행
 
-## 에뮬레이터 확인 결과
+1. 저장소를 클론합니다.
 
-Pleos Connect v2.1.0에서 APK 설치 후 게스트 로그인 → Home,
-Search/My/Home 탭 이동, Search 목록과 My의 두 목록의 터치 드래그,
-메뉴 역방향 드래그, 앱 강제 종료 후 게스트 Home 복원을 확인했습니다.
-화면과 UI 계층 기록은 `verification/tabs-*`에 있습니다.
-현재 메뉴·방문 기록과 8회 표시는 고정 목데이터이며 실제 이력 수집은 미구현입니다.
+   ```sh
+   git clone https://github.com/jelleoo/reststop-mate-android.git
+   ```
 
+2. Android Studio에서 `reststop-mate-android` 폴더를 **Open**합니다.
+3. SDK Manager에서 **Android SDK Platform 35**를 설치합니다.
+4. Gradle JDK를 **JDK 21**로 지정한 뒤 Gradle Sync를 실행합니다.
+5. Pleos Connect 에뮬레이터를 실행하고, 실행 대상으로 선택한 뒤 `app`을 Run합니다.
+6. 앱에서 **게스트로 시작하기**를 누르면 Home으로 이동합니다. 이후 Search·My 탭으로 이동할 수 있습니다.
 
-## 팀 작업 규칙
+현재 저장소가 비공개라면 GitHub 계정에 저장소 접근 권한이 있어야 클론할 수 있습니다.
 
-각 화면 담당자는 ui/login, ui/home, ui/search, ui/my에서 작업합니다.
-공통 navigation, components, theme와 목데이터 변경은 담당자 간 먼저 공유하세요.
-main은 빌드 가능한 상태로 유지하고 feat/login, feat/home, feat/search, feat/my처럼
-기능 브랜치에서 작업한 뒤 Pull Request로 합칩니다.
-화면 내부에서 직접 탭 상태나 게스트 저장소를 만들지 말고 전달받은 상태와 콜백을 사용합니다.
-소셜 로그인은 미구현이며, Search는 실제 휴게소 API에 연결됩니다.
+### 터미널에서 APK 빌드
 
-## 실제 API 검색과 최근 기록
-
-- API: `GET https://3.34.5.244/api/rest-stops`. 현재 제공 범위는 경부고속도로 부산 방향이며, 이름 검색은 내려받은 목록에서 처리합니다.
-- 검색 결과를 선택해야 최근 기록에 저장됩니다. 입력만 하거나 최근 항목에서 상세 메뉴를 열어보는 동작은 기록을 추가하지 않습니다.
-- 최근 항목은 별도 DataStore에 최대 10개, 휴게소 ID 기준 중복 없이 최신순으로 저장합니다. 앱 데이터 삭제 시에는 사라집니다.
-- `data/search/RestStopRepository.kt`: HTTPS 조회, 응답 변환, 최근 기록 저장.
-- `ui/search/SearchViewModel.kt`: 검색 상태와 오류·재시도·선택 처리.
-- `ui/search/SearchScreen.kt`: 검색창, 결과/최근 목록, 터치 드래그.
-- My의 방문·식사 기록은 계속 목데이터입니다.
-
-### 에뮬레이터 검색 검사
-
-게스트로 로그인된 에뮬레이터에서 실행합니다. 기존 데이터를 삭제하지 않지만 검사 과정에서 안성·망향휴게소가 실제 최근 기록에 추가됩니다. 각 명령 결과의 `verification=PASS`를 확인하세요.
+Windows PowerShell에서는 저장소 루트에서 실행합니다. `JAVA_HOME`은 각자의 JDK 21 설치 경로로 설정합니다.
 
 ```powershell
-.\gradlew.bat :app:assembleDebug :app:assembleDebugAndroidTest
+.\gradlew.bat :app:assembleDebug
+```
+
+macOS / Linux:
+
+```sh
+chmod +x gradlew
+./gradlew :app:assembleDebug
+```
+
+빌드가 완료되면 아래 경로에 APK가 생성됩니다.
+
+```text
+app/build/outputs/apk/debug/app-debug.apk
+```
+
+### APK 직접 설치 및 실행
+
+Android SDK의 `platform-tools`에 있는 `adb`를 사용할 수 있도록 PATH를 설정합니다. 에뮬레이터가 여러 개면 `adb -s <기기 ID>`로 설치 대상을 지정합니다.
+
+```sh
+adb devices
 adb install -r app/build/outputs/apk/debug/app-debug.apk
-adb install -r app/build/outputs/apk/androidTest/debug/app-debug-androidTest.apk
-adb shell am instrument --user current -w -e phase select com.yourssu.reststopmate.test/com.yourssu.reststopmate.SearchFlowVerification
-adb shell am force-stop --user current com.yourssu.reststopmate
-adb shell am instrument --user current -w -e phase restore com.yourssu.reststopmate.test/com.yourssu.reststopmate.SearchFlowVerification
 ```
 
-`select`는 한글 검색·공백 처리·결과 없음·중복 방지·최신순·가로 목록을, `restore`는 재실행 후 복원과 최근 항목의 대표 메뉴 표시을 검사합니다. API 서버에 연결할 수 있어야 합니다. 예전 `verification/check-tabs.ps1`은 Search 목데이터 기준 검사이므로 현재 Search 검증에는 위 검사를 사용하세요.
+설치 후 에뮬레이터 앱 목록에서 **휴게소 메이트**를 실행합니다. Pleos에서 여러 사용자 프로필이 있다면 현재 운전자 프로필의 앱 목록을 확인해 주세요.
 
-### 대표 메뉴 상세
+## 3. 테스트 환경 및 필요한 설정
 
-검색 결과와 최근 항목을 누르면 대표 메뉴 사진, 이름, 가격을 표시합니다. 대표 메뉴 API에는 가격이 없어 전체 메뉴 API에서 이름이 일치하는 항목의 priceWon을 연결합니다. 일치 가격이 없거나 서로 다르면 가격을 추측하지 않으며, 조회 실패 시 재시도를 제공합니다. 상세창을 닫아도 검색어와 목록 위치를 유지합니다.
+### 개발·빌드 환경
 
-추가 검사: adb shell am instrument --user current -w -e phase detail com.yourssu.reststopmate.test/com.yourssu.reststopmate.SearchFlowVerification
+- 언어·UI: Kotlin 2.0.21, Jetpack Compose, Material 3
+- 빌드 검증 JDK: **21**
+- Android Gradle Plugin: 8.6.1 / Gradle Wrapper: 8.7
+- compileSdk: **35** / targetSdk: **34** / minSdk: **28**
+- applicationId: `com.yourssu.reststopmate`
+- 앱 버전: `0.1.0` (versionCode 1)
 
-### 전체 메뉴
+### 필요한 설정
 
-대표 메뉴 아래의 전체 메뉴 보기 버튼으로 해당 휴게소 전체 메뉴 API를 조회합니다. 사진·이름·가격을 화면 너비에 맞춘 카드 목록으로 표시하며 터치로 세로 스크롤합니다. 대표 메뉴로 돌아가거나 닫아도 기존 검색어와 목록 위치를 유지합니다. 연결 실패·메뉴 없음·사진/가격 누락은 별도로 안내합니다.
+- `local.properties`의 `sdk.dir`은 각자의 Android SDK 설치 경로를 사용합니다. 이 파일은 Git에 커밋하지 않습니다.
+- 서버 데이터와 메뉴 사진 조회에는 **인터넷 연결**이 필요합니다.
+- API 기본 주소는 `https://3.34.5.244/`입니다. 현재 MVP 실행에 별도 API 키나 로그인 계정 입력은 필요하지 않습니다.
+- 로그인·My 목데이터는 서버 조회와 독립적입니다. Home·Search의 서버 목록과 메뉴 조회는 API 서버의 응답 상태에 영향을 받습니다.
+- 현재 위치는 고정 시연 좌표이므로 GPS 경로나 실제 차량 정보를 입력하지 않아도 실행할 수 있습니다.
 
-검사 명령: adb shell am instrument --user current -w -e phase all-menus com.yourssu.reststopmate.test/com.yourssu.reststopmate.SearchFlowVerification
+### 확인한 테스트 범위
 
-## Home·Search 통합 확인
+최신 Home·Search 통합 기능의 전체 시나리오는 일반 **Android 14 / API 34 에뮬레이터**에서 검증했습니다.
 
-PR #1의 Home·메뉴 정렬 화면과 Search의 API 검색·최근 기록·대표/전체 메뉴 창을 함께 제공합니다. Home 목록, Search 결과/최근 목록, My의 두 목록은 독립된 스크롤 상태를 사용합니다. Home 메뉴에서 뒤로가면 Home 목록, Search/My에서 시스템 뒤로가면 Home으로 돌아갑니다. 게스트 상태와 최근 검색 기록의 저장 형식은 변경하지 않았습니다.
+- 화면: **1600 × 1000 px**, **160dpi**, 소프트웨어 GPU
+- 게스트 로그인 → Home 진입 및 Home·Search·My 탭 전환
+- Home 메뉴 진입, 가격 정렬, 뒤로가기 및 가로 터치 드래그
+- 한글 휴게소 검색 → 대표 메뉴 → 전체 메뉴 및 세로 터치 스크롤
+- 앱 강제 종료·재실행 후 게스트 상태 및 최근 검색 기록 복원
 
-다음 검사는 앱 데이터를 지우지 않으며 검색 기록에 안성휴게소를 추가합니다. 테스트 APK를 설치한 뒤 `verification=PASS`를 확인하세요.
+상세 결과와 재현 정보는 [통합 검증 기록](verification/integration-2026-11-15.md)을 참고해 주세요. 이전 로그인·탭·목데이터 단계의 Pleos 검증 기록은 [초기 Pleos 검증 기록](verification/RESULTS.md)에 있습니다.
 
-```powershell
-adb shell am instrument --user current -w -e phase integration com.yourssu.reststopmate.test/com.yourssu.reststopmate.SearchFlowVerification
-adb shell am force-stop --user current com.yourssu.reststopmate
-adb shell am instrument --user current -w -e phase integration-restore com.yourssu.reststopmate.test/com.yourssu.reststopmate.SearchFlowVerification
-```
+## 4. Pleos Connect 에뮬레이터 버전 및 화면 규격
 
-최종 통합 검증 결과와 Pleos 확인 제약은 [통합 검증 기록](verification/integration-2026-11-15.md)을 참고하세요. Home 메뉴 정렬을 변경하면 목록 맨 위로 이동합니다.
+개발에 사용한 Pleos AVD 설정은 다음과 같습니다.
+
+- 에뮬레이터: **Pleos Connect v2.1.0**
+- 시스템 이미지: **Pleos Connect v2.1.0 APIs Intel x86_64 Atom System Image**
+- Android: **14 / API Level 34**
+- ABI: **x86_64**
+- 화면: **2560 × 1440 px**, 가로형
+- 화면 밀도: **160dpi**
+
+위 해상도는 에뮬레이터 전체 디스플레이 기준입니다. 시스템 UI와 앱 창 배치에 따라 앱이 실제 사용하는 영역은 달라지며, 앱은 사용 가능한 너비에 맞춰 탭과 목록 배치를 변경합니다.
+
+**Pleos 확인 범위:** 초기 버전의 게스트 로그인·탭 전환·터치 드래그·재실행 상태 유지를 확인했습니다. 최신 통합 버전에서는 앱 실행과 Home API 요청 성공을 확인했으나, Pleos 시스템의 검은 화면 및 차량 관련 서비스 반복 종료가 발생하여 전체 시나리오 검증을 완료하지 못했습니다. 위 일반 Android 에뮬레이터의 전체 통과 결과와 구분합니다.
+
+## 5. APK 파일 위치
+
+현재 배포 파일은 **MVP 디버그 APK**입니다.
+
+- 직접 빌드한 파일: [`app/build/outputs/apk/debug/app-debug.apk`](app/build/outputs/apk/debug/app-debug.apk)
+- 신청서 별도 첨부 파일명: `SSOK_0.1.0_MVP_2026-11-15.apk`
+- 용량: 약 **30.8 MB**
+
+APK 등 빌드 산출물은 Git으로 관리하지 않으므로, 클론 직후에는 위 경로에 파일이 없습니다. `assembleDebug` 빌드 후 생성됩니다. 현재 등록된 GitHub Release 다운로드 링크는 없습니다.
+
+## 6. 화면별 작업 파일
+
+아래 경로는 `app/src/main/java/com/yourssu/reststopmate/` 기준입니다.
+
+- 로그인: `ui/login/LoginScreen.kt`
+- Home: `ui/home/`, `ui/nearby/`
+- Home 메뉴 및 정렬: `ui/menu/`
+- Search·대표 메뉴·전체 메뉴: `ui/search/`, `data/search/`
+- My: `ui/my/MyScreen.kt`
+- 탭 연결: `ui/navigation/MainTabsScreen.kt`, `ui/navigation/TabMenu.kt`
+- 게스트 상태 저장: `data/SessionRepository.kt`, `ui/SessionViewModel.kt`
+
+협업 규칙과 AI 에이전트 작업 지침은 [AGENTS.md](AGENTS.md)를 참고해 주세요.
